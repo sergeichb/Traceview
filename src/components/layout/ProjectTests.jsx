@@ -1,5 +1,3 @@
-// ProjectTests.js
-
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Layout, List, Typography, Input, Collapse, Button } from 'antd';
@@ -62,8 +60,27 @@ const statusStyle = {
 
 const collapseContentStyle = {
   padding: '20px',
-  fontSize: '12px'
+  fontSize: '12px',
+  textAlign: 'left'
 };
+
+const projectRunData = [
+  {
+    project_name: "pu_v5",
+    latest_run: "03.07.2024 10:50",
+    status: "failed"
+  },
+  {
+    project_name: "rm_v5",
+    latest_run: "13.04.2024 10:10",
+    status: "passed"
+  },
+  {
+    project_name: "web_odg",
+    latest_run: "12.02.2024 00:30",
+    status: "passed"
+  }
+];
 
 const ProjectTests = () => {
   const { projectName } = useParams();
@@ -77,8 +94,16 @@ const ProjectTests = () => {
 
   useEffect(() => {
     if (projectData) {
-      const filtered = projectData.tests.filter(test =>
-        test.file.toLowerCase().includes(searchText.toLowerCase())
+      const groupedTests = projectData.tests.reduce((acc, test) => {
+        if (!acc[test.name]) {
+          acc[test.name] = [];
+        }
+        acc[test.name].push(test);
+        return acc;
+      }, {});
+
+      const filtered = Object.values(groupedTests).filter(tests =>
+        tests.some(test => test.file.toLowerCase().includes(searchText.toLowerCase()))
       );
       setFilteredTests(filtered);
     }
@@ -90,6 +115,11 @@ const ProjectTests = () => {
 
   const handleSearch = (value) => {
     setSearchText(value);
+  };
+
+  const getProjectRunData = (projectName) => {
+    const project = projectRunData.find(p => p.project_name === projectName);
+    return project ? project.latest_run : 'N/A';
   };
 
   if (!projectData) {
@@ -105,18 +135,21 @@ const ProjectTests = () => {
             placeholder="Search tests..."
             allowClear
             onChange={e => handleSearch(e.target.value)}
-            style={{ width: '500px', padding: '2px', marginBottom: '10px' }}
+            style={{ width: '500px', padding: '2px', marginBottom: '1px' }}
           />
-          <div>
+          <div style={{ marginBottom: '10px' }}>
             <Text>Total tests: {projectData.tests.length}</Text>&nbsp; | &nbsp;
             <Text>Passed: {projectData.tests.filter(test => test.status === 'passed').length}</Text>&nbsp; | &nbsp;
             <Text>Failed: {projectData.tests.filter(test => test.status === 'failed').length}</Text>&nbsp; | &nbsp;
             <Text>Total Time: {projectData.end - projectData.start} ms</Text>
           </div>
         </div>
+        <div style={{ textAlign: 'right', marginBottom: '10px' }}>
+          <Text strong>Run Time: {getProjectRunData(projectName)}</Text>
+        </div>
         <List
           dataSource={filteredTests}
-          renderItem={item => (
+          renderItem={tests => (
             <Collapse
               bordered={false}
               expandIcon={({ isActive }) => isActive ? null : <span></span>}
@@ -125,24 +158,25 @@ const ProjectTests = () => {
               <Panel
                 header={
                   <div style={projectInfoStyle}>
-                    <Text style={projectNameStyle}>{item.file}</Text>
-                    {getStatusIcon(item.status)}
+                    <Text style={projectNameStyle}>{tests[0].file}</Text>
+                    {getStatusIcon(tests.some(test => test.status === 'failed') ? 'failed' : 'passed')}
                   </div>
                 }
-                key={item.uuid}
+                key={tests[0].uuid}
                 style={listItemStyle}
                 extra={
                   <Button type="link">
-                    <Link to={`/test-details/${encodeURIComponent(item.name)}/${encodeURIComponent(item.file)}`} style={{ fontWeight: 'bold', color: '#000' }}>More</Link>
+                    <Link to={`/test-details/${encodeURIComponent(tests[0].name)}/${encodeURIComponent(tests[0].file)}`} style={{ fontWeight: 'bold', color: '#000' }}>More</Link>
                   </Button>
                 }
               >
-                <div style={collapseContentStyle}>
-                  <Text strong>{item.name}</Text><br />
-                  <Text>Status: {item.status}</Text><br />
-                  <Text>File: {item.file}</Text><br />
-                  <Text>Line: {item.line}</Text><br />
-                </div>
+                {tests.map(test => (
+                  <div key={test.uuid} style={collapseContentStyle}>
+                    <Text strong style={{ fontSize: '18px' }}>{test.name}</Text><br />
+                    <Text>Status: {test.status}</Text><br />
+                    <Text>Line: {test.line}</Text><br />
+                  </div>
+                ))}
               </Panel>
             </Collapse>
           )}
@@ -153,7 +187,6 @@ const ProjectTests = () => {
 };
 
 export default ProjectTests;
-
 
 const mockProjectData = {
   "start": 1721050735409,
