@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Layout, List, Typography, Input, Collapse, Button } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
@@ -64,41 +64,26 @@ const collapseContentStyle = {
   textAlign: 'left'
 };
 
-const projectRunData = [
-  {
-    project_name: "pu_v5",
-    latest_run: "03.07.2024 10:50",
-    status: "failed"
-  },
-  {
-    project_name: "rm_v5",
-    latest_run: "13.04.2024 10:10",
-    status: "passed"
-  },
-  {
-    project_name: "web_odg",
-    latest_run: "12.02.2024 00:30",
-    status: "passed"
-  }
-];
-
 const ProjectTests = () => {
   const { projectName } = useParams();
   const [projectData, setProjectData] = useState(null);
   const [filteredTests, setFilteredTests] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setProjectData(mockProjectData);
+    setTimeout(() => {
+      setProjectData(mockProjectData);
+    }, 100);
   }, [projectName]);
 
   useEffect(() => {
     if (projectData) {
       const groupedTests = projectData.tests.reduce((acc, test) => {
-        if (!acc[test.name]) {
-          acc[test.name] = [];
+        if (!acc[test.file]) {
+          acc[test.file] = [];
         }
-        acc[test.name].push(test);
+        acc[test.file].push(test);
         return acc;
       }, {});
 
@@ -120,6 +105,10 @@ const ProjectTests = () => {
   const getProjectRunData = (projectName) => {
     const project = projectRunData.find(p => p.project_name === projectName);
     return project ? project.latest_run : 'N/A';
+  };
+
+  const handleTestDetails = (testName, testFile, testUUID) => {
+    navigate(`/test-details/${encodeURIComponent(testName)}/${encodeURIComponent(testFile)}/${encodeURIComponent(testUUID)}`);
   };
 
   if (!projectData) {
@@ -164,17 +153,15 @@ const ProjectTests = () => {
                 }
                 key={tests[0].uuid}
                 style={listItemStyle}
-                extra={
-                  <Button type="link">
-                    <Link to={`/test-details/${encodeURIComponent(tests[0].name)}/${encodeURIComponent(tests[0].file)}`} style={{ fontWeight: 'bold', color: '#000' }}>More</Link>
-                  </Button>
-                }
               >
                 {tests.map(test => (
                   <div key={test.uuid} style={collapseContentStyle}>
                     <Text strong style={{ fontSize: '18px' }}>{test.name}</Text><br />
                     <Text>Status: {test.status}</Text><br />
                     <Text>Line: {test.line}</Text><br />
+                    <Button type="link" style={{ padding: 0 }} onClick={() => handleTestDetails(test.name, test.file, test.uuid)}>
+                      <Link to={`/test-details/${encodeURIComponent(test.name)}/${encodeURIComponent(test.file)}/${encodeURIComponent(test.uuid)}`} style={{ fontWeight: 'bold', color: '#000' }}>More</Link>
+                    </Button>
                   </div>
                 ))}
               </Panel>
@@ -215,3 +202,21 @@ const mockProjectData = {
     }
   ]
 };
+
+const projectRunData = [
+  {
+    project_name: "pu_v5",
+    latest_run: "03.07.2024 10:50",
+    status: "failed"
+  },
+  {
+    project_name: "rm_v5",
+    latest_run: "13.04.2024 10:10",
+    status: "passed"
+  },
+  {
+    project_name: "web_odg",
+    latest_run: "12.02.2024 00:30",
+    status: "passed"
+  }
+];
